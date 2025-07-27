@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -19,6 +19,9 @@ import {
   Switch,
   FormControlLabel,
   Chip,
+  Snackbar,
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import {
   Edit,
@@ -30,62 +33,53 @@ import {
   Visibility,
   VisibilityOff
 } from '@mui/icons-material';
+import { CMSService, initializeDefaultContent } from '../../services/cmsService';
+import type { SectionData } from '../../services/cmsService';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../config/firebase';
 
 interface CMSDashboardProps {
   onClose: () => void;
 }
 
-interface SectionData {
-  id: string;
-  type: 'hero' | 'about' | 'research' | 'publications' | 'contact';
-  title: { en: string; ja: string };
-  content: { en: string; ja: string };
-  visible: boolean;
-  order: number;
-}
+
 
 const CMSDashboard: React.FC<CMSDashboardProps> = ({ onClose }) => {
   const [selectedSection, setSelectedSection] = useState<SectionData | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ja'>('en');
+  const [sections, setSections] = useState<SectionData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
-  // Mock data - in real app this would come from Firebase
-  const [sections, setSections] = useState<SectionData[]>([
-    {
-      id: 'hero',
-      type: 'hero',
-      title: { en: 'Dr. [Your Name]', ja: 'Dr. [お名前]' },
-      content: { 
-        en: 'Materials & Electronics Engineer specializing in nanotechnology and sustainable energy solutions.',
-        ja: 'ナノテクノロジーと持続可能なエネルギーソリューションを専門とする材料・電子工学エンジニア。'
-      },
-      visible: true,
-      order: 1
-    },
-    {
-      id: 'about',
-      type: 'about',
-      title: { en: 'About Me', ja: '私について' },
-      content: { 
-        en: 'Dedicated researcher with over 8 years of experience in materials science and electronics engineering.',
-        ja: '材料科学と電子工学の分野で8年以上の経験を持つ専念した研究者です。'
-      },
-      visible: true,
-      order: 2
-    },
-    {
-      id: 'research',
-      type: 'research',
-      title: { en: 'Research', ja: '研究' },
-      content: { 
-        en: 'Current research focuses on quantum materials and advanced electronic devices.',
-        ja: '現在の研究は量子材料と先進電子デバイスに焦点を当てています。'
-      },
-      visible: true,
-      order: 3
-    }
-  ]);
+  // Load sections from Firebase
+  useEffect(() => {
+    const loadSections = async () => {
+      try {
+        setLoading(true);
+        await initializeDefaultContent(); // Initialize if empty
+        const sectionsData = await CMSService.getSections();
+        setSections(sectionsData);
+      } catch (error) {
+        console.error('Error loading sections:', error);
+        setSnackbar({
+          open: true,
+          message: 'Error loading content. Please check your Firebase configuration.',
+          severity: 'error'
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSections();
+  }, []);
 
 
 
@@ -94,30 +88,91 @@ const CMSDashboard: React.FC<CMSDashboardProps> = ({ onClose }) => {
     setEditDialogOpen(true);
   };
 
-  const handleSaveSection = () => {
+  const handleSaveSection = async () => {
     if (selectedSection) {
-      setSections(prev => 
-        prev.map(section => 
-          section.id === selectedSection.id ? selectedSection : section
-        )
-      );
+      try {
+        setSaving(true);
+        const success = await CMSService.saveSection(selectedSection);
+        if (success) {
+          setSections(prev => 
+            prev.map(section => 
+              section.id === selectedSection.id ? selectedSection : section
+            )
+          );
+          setSnackbar({
+            open: true,
+            message: 'Section saved successfully!',
+            severity: 'success'
+          });
+        } else {
+          setSnackbar({
+            open: true,
+            message: 'Error saving section. Please try again.',
+            severity: 'error'
+          });
+        }
+              } catch {
+          setSnackbar({
+            open: true,
+            message: 'Error saving section. Please try again.',
+            severity: 'error'
+          });
+      } finally {
+        setSaving(false);
+      }
     }
     setEditDialogOpen(false);
     setSelectedSection(null);
   };
 
-  const handleToggleVisibility = (sectionId: string) => {
-    setSections(prev =>
-      prev.map(section =>
-        section.id === sectionId ? { ...section, visible: !section.visible } : section
-      )
-    );
+  const handleToggleVisibility = async (sectionId: string) => {
+    const section = sections.find(s => s.id === sectionId);
+    if (section) {
+      try {
+        const success = await CMSService.updateSection(sectionId, { visible: !section.visible });
+        if (success) {
+          setSections(prev =>
+            prev.map(section =>
+              section.id === sectionId ? { ...section, visible: !section.visible } : section
+            )
+          );
+        }
+              } catch {
+          setSnackbar({
+            open: true,
+            message: 'Error updating section visibility.',
+            severity: 'error'
+          });
+      }
+    }
   };
 
-  const handlePublish = () => {
-    // In real app, this would save to Firebase and trigger deployment
-    console.log('Publishing changes...');
-    alert('Changes published successfully!');
+  const handlePublish = async () => {
+    try {
+      setSaving(true);
+      const success = await CMSService.publishChanges();
+      if (success) {
+        setSnackbar({
+          open: true,
+          message: 'Changes published successfully!',
+          severity: 'success'
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: 'Error publishing changes. Please try again.',
+          severity: 'error'
+        });
+      }
+    } catch {
+      setSnackbar({
+        open: true,
+        message: 'Error publishing changes. Please try again.',
+        severity: 'error'
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const renderSectionCard = (section: SectionData) => (
@@ -185,8 +240,18 @@ const CMSDashboard: React.FC<CMSDashboardProps> = ({ onClose }) => {
               startIcon={<Publish />}
               onClick={handlePublish}
               color="success"
+              disabled={saving}
             >
-              Publish Changes
+              {saving ? 'Publishing...' : 'Publish Changes'}
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={async () => {
+                await signOut(auth);
+                onClose();
+              }}
+            >
+              Logout
             </Button>
             <Button
               variant="outlined"
@@ -218,7 +283,13 @@ const CMSDashboard: React.FC<CMSDashboardProps> = ({ onClose }) => {
                 Website Sections
               </Typography>
               
-              {sections.map(renderSectionCard)}
+              {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                sections.map(renderSectionCard)
+              )}
               
               <Button
                 variant="outlined"
@@ -313,7 +384,7 @@ const CMSDashboard: React.FC<CMSDashboardProps> = ({ onClose }) => {
         <DialogContent>
           {selectedSection && (
             <Box sx={{ pt: 2 }}>
-              <Tabs value={currentLanguage === 'en' ? 0 : 1} onChange={(e, value) => setCurrentLanguage(value === 0 ? 'en' : 'ja')}>
+              <Tabs value={currentLanguage === 'en' ? 0 : 1} onChange={(_, value) => setCurrentLanguage(value === 0 ? 'en' : 'ja')}>
                 <Tab label="English" />
                 <Tab label="日本語" />
               </Tabs>
@@ -354,6 +425,20 @@ const CMSDashboard: React.FC<CMSDashboardProps> = ({ onClose }) => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

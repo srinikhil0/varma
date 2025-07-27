@@ -2,12 +2,14 @@ import React from 'react';
 import { Box, Typography, Container, Grid, Paper, Chip } from '@mui/material';
 import { motion } from 'framer-motion';
 import { School, Work, Science, Psychology } from '@mui/icons-material';
+import type { SectionData } from '../../services/cmsService';
 
 interface AboutProps {
   language: 'en' | 'ja';
+  sections: SectionData[];
 }
 
-const About: React.FC<AboutProps> = ({ language }) => {
+const About: React.FC<AboutProps> = ({ language, sections }) => {
   const content = {
     en: {
       title: "About Me",

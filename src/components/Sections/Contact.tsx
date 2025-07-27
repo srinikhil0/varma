@@ -3,11 +3,14 @@ import { Box, Typography, Container, Grid, Paper, TextField, Button, IconButton 
 import { motion } from 'framer-motion';
 import { Email, Phone, LocationOn, LinkedIn, GitHub, Send } from '@mui/icons-material';
 
+import type { SectionData } from '../../services/cmsService';
+
 interface ContactProps {
   language: 'en' | 'ja';
+  sections: SectionData[];
 }
 
-const Contact: React.FC<ContactProps> = ({ language }) => {
+const Contact: React.FC<ContactProps> = ({ language, sections }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',

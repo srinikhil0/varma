@@ -1,18 +1,24 @@
 import React, { useState } from 'react';
 import { AppBar, Toolbar, Typography, Button, Box, IconButton, Drawer, List, ListItem, ListItemText, useTheme, useMediaQuery } from '@mui/material';
 import { Menu as MenuIcon, Language, LightMode, DarkMode } from '@mui/icons-material';
+import type { SectionData } from '../../services/cmsService';
 
 interface HeaderProps {
   onLanguageChange: (lang: 'en' | 'ja') => void;
   currentLanguage: 'en' | 'ja';
   onThemeToggle: () => void;
   isDarkMode: boolean;
+  sections: SectionData[];
 }
 
-const Header: React.FC<HeaderProps> = ({ onLanguageChange, currentLanguage, onThemeToggle, isDarkMode }) => {
+const Header: React.FC<HeaderProps> = ({ onLanguageChange, currentLanguage, onThemeToggle, isDarkMode, sections }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // Get hero section data for the name in header
+  const heroSection = sections.find(section => section.id === 'hero');
+  const headerName = heroSection?.title?.[currentLanguage] || "Dr. [Name]";
 
   const navItems = [
     { key: 'home', en: 'Home', ja: 'ホーム' },
@@ -71,7 +77,7 @@ const Header: React.FC<HeaderProps> = ({ onLanguageChange, currentLanguage, onTh
               WebkitTextFillColor: 'transparent'
             }}
           >
-            Dr. [Name]
+            {headerName}
           </Typography>
 
           {!isMobile && (

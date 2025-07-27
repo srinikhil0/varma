@@ -3,11 +3,14 @@ import { Box, Typography, Container, Grid, Card, CardContent, CardMedia, Chip, B
 import { motion } from 'framer-motion';
 import { Science, Article, TrendingUp } from '@mui/icons-material';
 
+import type { SectionData } from '../../services/cmsService';
+
 interface ResearchProps {
   language: 'en' | 'ja';
+  sections: SectionData[];
 }
 
-const Research: React.FC<ResearchProps> = ({ language }) => {
+const Research: React.FC<ResearchProps> = ({ language, sections }) => {
   const content = {
     en: {
       title: "Research & Publications",

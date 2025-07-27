@@ -2,16 +2,22 @@ import React from 'react';
 import { Box, Typography, Button, Container, Grid, Paper } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Download, Email } from '@mui/icons-material';
+import type { SectionData } from '../../services/cmsService';
 
 interface HeroProps {
   language: 'en' | 'ja';
+  sections: SectionData[];
 }
 
-const Hero: React.FC<HeroProps> = ({ language }) => {
+const Hero: React.FC<HeroProps> = ({ language, sections }) => {
+  // Get hero section data from Firestore
+  const heroSection = sections.find(section => section.id === 'hero');
+  
+  // Use dynamic content from Firestore or fallback to static content
   const content = {
     en: {
-      title: "Dr. [Your Name]",
-      subtitle: "Materials & Electronics Engineer",
+      title: heroSection?.title?.en || "Dr. [Your Name]",
+      subtitle: heroSection?.content?.en || "Materials & Electronics Engineer",
       description: "Pioneering research in advanced materials and electronic devices. Specializing in nanotechnology, semiconductor physics, and sustainable energy solutions.",
       cta: "Download CV",
       contact: "Get in Touch",
@@ -20,8 +26,8 @@ const Hero: React.FC<HeroProps> = ({ language }) => {
       projects: "Projects Completed"
     },
     ja: {
-      title: "Dr. [お名前]",
-      subtitle: "材料・電子工学エンジニア",
+      title: heroSection?.title?.ja || "Dr. [お名前]",
+      subtitle: heroSection?.content?.ja || "材料・電子工学エンジニア",
       description: "先進材料と電子デバイスの先駆的研究を行っています。ナノテクノロジー、半導体物理学、持続可能なエネルギーソリューションを専門としています。",
       cta: "履歴書をダウンロード",
       contact: "お問い合わせ",
