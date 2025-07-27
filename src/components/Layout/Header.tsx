@@ -58,10 +58,15 @@ const Header: React.FC<HeaderProps> = ({ onLanguageChange, currentLanguage, onTh
       <AppBar 
         position="fixed" 
         sx={{ 
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(10px)',
-          boxShadow: '0 2px 20px rgba(0, 0, 0, 0.1)',
-          color: 'text.primary'
+          backgroundColor: isDarkMode ? 'rgba(26, 26, 26, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          boxShadow: isDarkMode 
+            ? '0 2px 20px rgba(0, 0, 0, 0.3)' 
+            : '0 2px 20px rgba(0, 0, 0, 0.1)',
+          color: isDarkMode ? 'white' : 'text.primary',
+          borderBottom: isDarkMode 
+            ? '1px solid rgba(255, 255, 255, 0.1)' 
+            : '1px solid rgba(0, 0, 0, 0.1)'
         }}
       >
         <Toolbar>
@@ -71,7 +76,9 @@ const Header: React.FC<HeaderProps> = ({ onLanguageChange, currentLanguage, onTh
             sx={{ 
               flexGrow: 1, 
               fontWeight: 700,
-              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+              background: isDarkMode 
+                ? 'linear-gradient(45deg, #64B5F6 30%, #90CAF9 90%)'
+                : 'linear-gradient(45deg, #1976D2 30%, #42A5F5 90%)',
               backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent'

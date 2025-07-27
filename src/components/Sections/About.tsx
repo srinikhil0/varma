@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Container, Grid, Paper, Chip } from '@mui/material';
+import { Box, Typography, Container, Grid, Paper, Chip, useTheme } from '@mui/material';
 import { motion } from 'framer-motion';
 import { School, Work, Science, Psychology } from '@mui/icons-material';
 import type { SectionData } from '../../services/cmsService';
@@ -9,7 +9,10 @@ interface AboutProps {
   sections: SectionData[];
 }
 
-const About: React.FC<AboutProps> = ({ language, sections }) => {
+const About: React.FC<AboutProps> = ({ language }) => {
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
+  
   const content = {
     en: {
       title: "About Me",
@@ -152,7 +155,10 @@ const About: React.FC<AboutProps> = ({ language, sections }) => {
       id="about"
       sx={{
         py: 8,
-        backgroundColor: 'background.default'
+        backgroundColor: 'background.default',
+        background: isDarkMode 
+          ? 'linear-gradient(180deg, #0A0A0A 0%, #1A1A1A 100%)'
+          : 'linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 100%)'
       }}
     >
       <Container maxWidth="lg">
@@ -168,7 +174,9 @@ const About: React.FC<AboutProps> = ({ language, sections }) => {
               textAlign: 'center',
               fontWeight: 700,
               mb: 2,
-              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+              background: isDarkMode 
+                ? 'linear-gradient(45deg, #64B5F6 30%, #90CAF9 90%)'
+                : 'linear-gradient(45deg, #1976D2 30%, #42A5F5 90%)',
               backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent'

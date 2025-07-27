@@ -57,15 +57,24 @@ function App() {
     palette: {
       mode: isDarkMode ? 'dark' : 'light',
       primary: {
-        main: '#2196F3',
+        main: isDarkMode ? '#64B5F6' : '#1976D2',
+        light: isDarkMode ? '#90CAF9' : '#42A5F5',
+        dark: isDarkMode ? '#1976D2' : '#0D47A1',
       },
       secondary: {
-        main: '#21CBF3',
+        main: isDarkMode ? '#81C784' : '#388E3C',
+        light: isDarkMode ? '#A5D6A7' : '#66BB6A',
+        dark: isDarkMode ? '#388E3C' : '#1B5E20',
       },
       background: {
-        default: isDarkMode ? '#121212' : '#fafafa',
-        paper: isDarkMode ? '#1e1e1e' : '#ffffff',
+        default: isDarkMode ? '#0A0A0A' : '#F8FAFC',
+        paper: isDarkMode ? '#1A1A1A' : '#FFFFFF',
       },
+      text: {
+        primary: isDarkMode ? '#FFFFFF' : '#1A202C',
+        secondary: isDarkMode ? '#B0BEC5' : '#4A5568',
+      },
+      divider: isDarkMode ? '#2D3748' : '#E2E8F0',
     },
     typography: {
       fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
@@ -93,22 +102,59 @@ function App() {
         styleOverrides: {
           root: {
             textTransform: 'none',
-            borderRadius: 8,
+            borderRadius: 12,
+            boxShadow: isDarkMode 
+              ? '0 4px 20px rgba(100, 181, 246, 0.3)' 
+              : '0 4px 20px rgba(25, 118, 210, 0.2)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: isDarkMode 
+                ? '0 8px 30px rgba(100, 181, 246, 0.4)' 
+                : '0 8px 30px rgba(25, 118, 210, 0.3)',
+            },
           },
         },
       },
       MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+            borderRadius: 16,
+            boxShadow: isDarkMode 
+              ? '0 8px 32px rgba(0, 0, 0, 0.4)' 
+              : '0 8px 32px rgba(0, 0, 0, 0.1)',
+            backdropFilter: 'blur(10px)',
+            border: isDarkMode 
+              ? '1px solid rgba(255, 255, 255, 0.1)' 
+              : '1px solid rgba(255, 255, 255, 0.8)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: isDarkMode 
+                ? '0 16px 48px rgba(0, 0, 0, 0.6)' 
+                : '0 16px 48px rgba(0, 0, 0, 0.15)',
+            },
           },
         },
       },
       MuiPaper: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
+            borderRadius: 16,
+            backdropFilter: 'blur(10px)',
+            border: isDarkMode 
+              ? '1px solid rgba(255, 255, 255, 0.1)' 
+              : '1px solid rgba(255, 255, 255, 0.8)',
+          },
+        },
+      },
+      MuiAppBar: {
+        styleOverrides: {
+          root: {
+            backdropFilter: 'blur(20px)',
+            borderBottom: isDarkMode 
+              ? '1px solid rgba(255, 255, 255, 0.1)' 
+              : '1px solid rgba(0, 0, 0, 0.1)',
           },
         },
       },
