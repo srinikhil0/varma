@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Typography, Container, Grid, Paper, TextField, Button, IconButton } from '@mui/material';
 import { motion } from 'framer-motion';
-import { Email, Phone, LocationOn, LinkedIn, GitHub, Send } from '@mui/icons-material';
+import { Email, Phone, LocationOn, LinkedIn, Send } from '@mui/icons-material';
 
 import type { SectionData } from '../../services/cmsService';
 
@@ -64,7 +64,6 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
       phone: contactInfo.phone || "+81-XX-XXXX-XXXX",
       emailAddress: contactInfo.email || "dr.name@university.ac.jp",
       linkedin: contactInfo.linkedin || "LinkedIn Profile",
-      github: "GitHub Profile",
       researchInterests: "Research Interests",
       collaboration: "Collaboration Opportunities",
       speaking: "Speaking Engagements"
@@ -83,7 +82,6 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
       phone: contactInfo.phone || "+81-XX-XXXX-XXXX",
       emailAddress: contactInfo.email || "dr.name@university.ac.jp",
       linkedin: contactInfo.linkedin || "LinkedInプロフィール",
-      github: "GitHubプロフィール",
       researchInterests: "研究関心",
       collaboration: "コラボレーション機会",
       speaking: "講演依頼"
@@ -349,15 +347,6 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
                       disabled={!contactInfo.linkedin}
                     >
                       <LinkedIn />
-                    </IconButton>
-                    <IconButton
-                      color="primary"
-                      sx={{
-                        border: '1px solid',
-                        borderColor: 'primary.main'
-                      }}
-                    >
-                      <GitHub />
                     </IconButton>
                   </Box>
                 </Box>

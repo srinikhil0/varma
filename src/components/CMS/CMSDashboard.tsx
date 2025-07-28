@@ -42,6 +42,7 @@ import {
 } from '@mui/icons-material';
 import { CMSService, initializeDefaultContent } from '../../services/cmsService';
 import type { SectionData } from '../../services/cmsService';
+import { TranslationService } from '../../services/translationService';
 import { signOut } from 'firebase/auth';
 import { auth, storage, db } from '../../config/firebase';
 import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from 'firebase/storage';
@@ -77,6 +78,10 @@ const CMSDashboard: React.FC<CMSDashboardProps> = ({ onClose }) => {
     message: '',
     severity: 'success'
   });
+
+  // Translation state
+  const [translationEnabled, setTranslationEnabled] = useState(TranslationService.isInitialized());
+  const [translating, setTranslating] = useState(false);
 
   // Profile data state
   const [profileData, setProfileData] = useState({
@@ -554,6 +559,93 @@ const CMSDashboard: React.FC<CMSDashboardProps> = ({ onClose }) => {
     }
   };
 
+  // Translation functions
+  const handleTranslateSection = async (section: SectionData) => {
+    if (!translationEnabled) {
+      setSnackbar({
+        open: true,
+        message: 'Translation service not available. Please check your API key.',
+        severity: 'error'
+      });
+      return;
+    }
+
+    setTranslating(true);
+    try {
+      const updatedSection = { ...section };
+
+      // Translate English to Japanese if Japanese is empty
+      if (section.title.en && !section.title.ja) {
+        const titleTranslation = await TranslationService.translateToJapanese(section.title.en);
+        updatedSection.title.ja = titleTranslation.translatedText;
+      }
+
+      if (section.content.en && !section.content.ja) {
+        const contentTranslation = await TranslationService.translateToJapanese(section.content.en);
+        updatedSection.content.ja = contentTranslation.translatedText;
+      }
+
+      // Save the translated section
+      await CMSService.saveSection(updatedSection);
+      
+      // Update local state
+      setSections(prev => prev.map(s => s.id === section.id ? updatedSection : s));
+      
+      setSnackbar({
+        open: true,
+        message: 'Section translated successfully!',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Translation error:', error);
+      setSnackbar({
+        open: true,
+        message: 'Error translating section',
+        severity: 'error'
+      });
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleTranslateAllSections = async () => {
+    if (!translationEnabled) {
+      setSnackbar({
+        open: true,
+        message: 'Translation service not available. Please check your API key.',
+        severity: 'error'
+      });
+      return;
+    }
+
+    setTranslating(true);
+    try {
+      const sectionsToTranslate = sections.filter(section => 
+        (section.title.en && !section.title.ja) || 
+        (section.content.en && !section.content.ja)
+      );
+
+      for (const section of sectionsToTranslate) {
+        await handleTranslateSection(section);
+      }
+
+      setSnackbar({
+        open: true,
+        message: `Translated ${sectionsToTranslate.length} sections successfully!`,
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Batch translation error:', error);
+      setSnackbar({
+        open: true,
+        message: 'Error translating sections',
+        severity: 'error'
+      });
+    } finally {
+      setTranslating(false);
+    }
+  };
+
 
 
   return (
@@ -590,6 +682,17 @@ const CMSDashboard: React.FC<CMSDashboardProps> = ({ onClose }) => {
             >
               {saving ? 'Publishing...' : 'Publish Changes'}
             </Button>
+            {translationEnabled && (
+              <Button
+                variant="contained"
+                color="info"
+                onClick={handleTranslateAllSections}
+                disabled={translating}
+                startIcon={translating ? <CircularProgress size={20} /> : <Description />}
+              >
+                {translating ? 'Translating...' : 'Auto-Translate All'}
+              </Button>
+            )}
             <Button
               variant="outlined"
               onClick={async () => {
@@ -608,8 +711,8 @@ const CMSDashboard: React.FC<CMSDashboardProps> = ({ onClose }) => {
           </Box>
         </Box>
 
-        {/* Language Toggle */}
-        <Box sx={{ mb: 3 }}>
+        {/* Language Toggle and Translation Status */}
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <FormControlLabel
             control={
               <Switch
@@ -619,6 +722,20 @@ const CMSDashboard: React.FC<CMSDashboardProps> = ({ onClose }) => {
             }
             label={`Language: ${currentLanguage === 'en' ? 'English' : '日本語'}`}
           />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="body2" color={translationEnabled ? 'success.main' : 'error.main'}>
+              Translation: {translationEnabled ? 'Available' : 'Not Available'}
+            </Typography>
+            {!translationEnabled && (
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setTranslationEnabled(TranslationService.isInitialized())}
+              >
+                Check Again
+              </Button>
+            )}
+          </Box>
         </Box>
 
         {/* Main Content */}
