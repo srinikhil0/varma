@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
-import { Card, CardProps, useTheme } from '@mui/material';
+import { Card } from '@mui/material';
+import type { CardProps } from '@mui/material';
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
 
 interface FloatingCardProps extends CardProps {
@@ -13,8 +14,8 @@ const FloatingCard: React.FC<FloatingCardProps> = ({
   sx, 
   ...props 
 }) => {
-  const theme = useTheme();
-  const isDarkMode = theme.palette.mode === 'dark';
+
+
   const cardRef = useRef<HTMLDivElement>(null);
   
   const x = useMotionValue(0);

@@ -28,7 +28,7 @@ const About: React.FC<AboutProps> = ({ language, sections }) => {
   const isDarkMode = theme.palette.mode === 'dark';
   
   // Get sections from Firestore
-  const aboutSection = sections.find(section => section.id === 'about');
+
   const educationSection = sections.find(section => section.id === 'education');
   const experienceSection = sections.find(section => section.id === 'experience');
   const researchSection = sections.find(section => section.id === 'research');
