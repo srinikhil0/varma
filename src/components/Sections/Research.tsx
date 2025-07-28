@@ -5,12 +5,69 @@ import { Science, Article, TrendingUp } from '@mui/icons-material';
 
 import type { SectionData } from '../../services/cmsService';
 
+interface ResearchProject {
+  title: string;
+  description: string;
+  image: string;
+  tags: string[];
+  status: string;
+}
+
+interface Publication {
+  title: string;
+  journal: string;
+  year: string;
+  authors: string;
+  doi: string;
+  impact: string;
+}
+
+interface Achievement {
+  title: string;
+  description: string;
+  year: string;
+}
+
 interface ResearchProps {
   language: 'en' | 'ja';
   sections: SectionData[];
 }
 
 const Research: React.FC<ResearchProps> = ({ language, sections }) => {
+  // Get sections from Firestore
+  const researchProjectsSection = sections.find(section => section.id === 'research-projects');
+  const publicationsSection = sections.find(section => section.id === 'publications');
+  const achievementsSection = sections.find(section => section.id === 'achievements');
+
+  // Parse structured data
+  const parseResearchProjects = (content: string): ResearchProject[] => {
+    try {
+      return JSON.parse(content);
+    } catch {
+      return [];
+    }
+  };
+
+  const parsePublications = (content: string): Publication[] => {
+    try {
+      return JSON.parse(content);
+    } catch {
+      return [];
+    }
+  };
+
+  const parseAchievements = (content: string): Achievement[] => {
+    try {
+      return JSON.parse(content);
+    } catch {
+      return [];
+    }
+  };
+
+  const researchProjects = researchProjectsSection ? parseResearchProjects(researchProjectsSection.content[language]) : [];
+  const publications = publicationsSection ? parsePublications(publicationsSection.content[language]) : [];
+  const achievements = achievementsSection ? parseAchievements(achievementsSection.content[language]) : [];
+
   const content = {
     en: {
       title: "Research & Publications",
@@ -19,72 +76,9 @@ const Research: React.FC<ResearchProps> = ({ language, sections }) => {
       publicationsTitle: "Recent Publications",
       achievementsTitle: "Key Achievements",
       viewAll: "View All Publications",
-      projects: [
-        {
-          title: "Quantum Materials for Next-Gen Electronics",
-          description: "Developing novel quantum materials with unique electronic properties for advanced computing applications.",
-          image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400",
-          tags: ["Quantum Materials", "Electronics", "Computing"],
-          status: "Active"
-        },
-        {
-          title: "Sustainable Energy Storage Solutions",
-          description: "Researching advanced battery technologies and energy storage systems for renewable energy integration.",
-          image: "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400",
-          tags: ["Energy Storage", "Batteries", "Renewable Energy"],
-          status: "Active"
-        },
-        {
-          title: "Nanomaterials for Biomedical Applications",
-          description: "Exploring the use of nanomaterials in medical devices and drug delivery systems.",
-          image: "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=400",
-          tags: ["Nanomaterials", "Biomedical", "Drug Delivery"],
-          status: "Active"
-        }
-      ],
-      publications: [
-        {
-          title: "Advanced Quantum Materials for Electronic Applications",
-          journal: "Nature Materials",
-          year: "2024",
-          authors: "Dr. [Name], et al.",
-          doi: "10.1038/s41563-024-00000-0",
-          impact: "High Impact"
-        },
-        {
-          title: "Novel Energy Storage Materials: A Comprehensive Review",
-          journal: "Advanced Materials",
-          year: "2023",
-          authors: "Dr. [Name], et al.",
-          doi: "10.1002/adma.202300000",
-          impact: "High Impact"
-        },
-        {
-          title: "Nanomaterials in Biomedical Engineering",
-          journal: "Science Advances",
-          year: "2023",
-          authors: "Dr. [Name], et al.",
-          doi: "10.1126/sciadv.abc0000",
-          impact: "High Impact"
-        }
-      ],
-      achievements: [
-        {
-          title: "Best Paper Award",
-          description: "Recognized for outstanding contribution to materials science",
-          year: "2024"
-        },
-        {
-          title: "Research Grant",
-          description: "Secured $2M funding for quantum materials research",
-          year: "2023"
-        },
-        {
-          title: "Patent Awarded",
-          description: "Novel energy storage device technology",
-          year: "2023"
-        }
-      ]
+      projects: researchProjects,
+      publications: publications,
+      achievements: achievements
     },
     ja: {
       title: "研究・論文",
@@ -93,72 +87,9 @@ const Research: React.FC<ResearchProps> = ({ language, sections }) => {
       publicationsTitle: "最近の論文",
       achievementsTitle: "主要な成果",
       viewAll: "すべての論文を見る",
-      projects: [
-        {
-          title: "次世代エレクトロニクスのための量子材料",
-          description: "先進的なコンピューティング応用のための独特な電子特性を持つ新規量子材料の開発。",
-          image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400",
-          tags: ["量子材料", "エレクトロニクス", "コンピューティング"],
-          status: "進行中"
-        },
-        {
-          title: "持続可能なエネルギー貯蔵ソリューション",
-          description: "再生可能エネルギー統合のための先進バッテリー技術とエネルギー貯蔵システムの研究。",
-          image: "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400",
-          tags: ["エネルギー貯蔵", "バッテリー", "再生可能エネルギー"],
-          status: "進行中"
-        },
-        {
-          title: "生体医学応用のためのナノ材料",
-          description: "医療機器と薬物送達システムにおけるナノ材料の使用の探求。",
-          image: "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=400",
-          tags: ["ナノ材料", "生体医学", "薬物送達"],
-          status: "進行中"
-        }
-      ],
-      publications: [
-        {
-          title: "電子応用のための先進量子材料",
-          journal: "Nature Materials",
-          year: "2024",
-          authors: "Dr. [名前], et al.",
-          doi: "10.1038/s41563-024-00000-0",
-          impact: "高インパクト"
-        },
-        {
-          title: "新規エネルギー貯蔵材料：包括的レビュー",
-          journal: "Advanced Materials",
-          year: "2023",
-          authors: "Dr. [名前], et al.",
-          doi: "10.1002/adma.202300000",
-          impact: "高インパクト"
-        },
-        {
-          title: "生体医学工学におけるナノ材料",
-          journal: "Science Advances",
-          year: "2023",
-          authors: "Dr. [名前], et al.",
-          doi: "10.1126/sciadv.abc0000",
-          impact: "高インパクト"
-        }
-      ],
-      achievements: [
-        {
-          title: "最優秀論文賞",
-          description: "材料科学への優れた貢献が認められました",
-          year: "2024"
-        },
-        {
-          title: "研究助成金",
-          description: "量子材料研究のために200万ドルの資金を確保",
-          year: "2023"
-        },
-        {
-          title: "特許取得",
-          description: "新規エネルギー貯蔵デバイス技術",
-          year: "2023"
-        }
-      ]
+      projects: researchProjects,
+      publications: publications,
+      achievements: achievements
     }
   };
 

@@ -18,6 +18,37 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
     message: ''
   });
 
+  // Get contact section from Firestore
+  const contactSection = sections.find(section => section.id === 'contact');
+  const researchSection = sections.find(section => section.id === 'research');
+
+  // Parse contact information
+  const parseContactInfo = (content: string) => {
+    const lines = content.split('\n');
+    const contactInfo: { [key: string]: string } = {};
+    
+    lines.forEach(line => {
+      const [key, value] = line.split(': ').map(part => part.trim());
+      if (key && value) {
+        contactInfo[key.toLowerCase()] = value;
+      }
+    });
+    
+    return contactInfo;
+  };
+
+  // Parse research interests
+  const parseResearchInterests = (content: string) => {
+    try {
+      return JSON.parse(content);
+    } catch {
+      return [];
+    }
+  };
+
+  const contactInfo = contactSection ? parseContactInfo(contactSection.content[language]) : {};
+  const researchInterests = researchSection ? parseResearchInterests(researchSection.content[language]) : [];
+
   const content = {
     en: {
       title: "Get In Touch",
@@ -29,10 +60,10 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
       email: "Email",
       subject: "Subject",
       message: "Message",
-      location: "Tokyo, Japan",
-      phone: "+81-XX-XXXX-XXXX",
-      emailAddress: "dr.name@university.ac.jp",
-      linkedin: "LinkedIn Profile",
+      location: contactInfo.location || "Tokyo, Japan",
+      phone: contactInfo.phone || "+81-XX-XXXX-XXXX",
+      emailAddress: contactInfo.email || "dr.name@university.ac.jp",
+      linkedin: contactInfo.linkedin || "LinkedIn Profile",
       github: "GitHub Profile",
       researchInterests: "Research Interests",
       collaboration: "Collaboration Opportunities",
@@ -48,10 +79,10 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
       email: "メールアドレス",
       subject: "件名",
       message: "メッセージ",
-      location: "東京都",
-      phone: "+81-XX-XXXX-XXXX",
-      emailAddress: "dr.name@university.ac.jp",
-      linkedin: "LinkedInプロフィール",
+      location: contactInfo.location || "東京都",
+      phone: contactInfo.phone || "+81-XX-XXXX-XXXX",
+      emailAddress: contactInfo.email || "dr.name@university.ac.jp",
+      linkedin: contactInfo.linkedin || "LinkedInプロフィール",
       github: "GitHubプロフィール",
       researchInterests: "研究関心",
       collaboration: "コラボレーション機会",
@@ -277,16 +308,29 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
                     {currentContent.researchInterests}
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {['Quantum Materials', 'Semiconductor Physics', 'Nanotechnology', 'Energy Storage'].map((interest, index) => (
-                      <Button
-                        key={index}
-                        variant="outlined"
-                        size="small"
-                        sx={{ mb: 1 }}
-                      >
-                        {interest}
-                      </Button>
-                    ))}
+                    {researchInterests.length > 0 ? (
+                      researchInterests.map((interest: string, index: number) => (
+                        <Button
+                          key={index}
+                          variant="outlined"
+                          size="small"
+                          sx={{ mb: 1 }}
+                        >
+                          {interest}
+                        </Button>
+                      ))
+                    ) : (
+                      ['Quantum Materials', 'Semiconductor Physics', 'Nanotechnology', 'Energy Storage'].map((interest, index) => (
+                        <Button
+                          key={index}
+                          variant="outlined"
+                          size="small"
+                          sx={{ mb: 1 }}
+                        >
+                          {interest}
+                        </Button>
+                      ))
+                    )}
                   </Box>
                 </Box>
 
@@ -301,6 +345,8 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
                         border: '1px solid',
                         borderColor: 'primary.main'
                       }}
+                      onClick={() => contactInfo.linkedin && window.open(contactInfo.linkedin, '_blank')}
+                      disabled={!contactInfo.linkedin}
                     >
                       <LinkedIn />
                     </IconButton>

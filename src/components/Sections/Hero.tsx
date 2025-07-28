@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, Button, Container, Grid, Paper, useTheme } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Download, Email } from '@mui/icons-material';
 import type { SectionData } from '../../services/cmsService';
 import AnimatedBackground from '../3D/AnimatedBackground';
+import { db } from '../../config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface HeroProps {
   language: 'en' | 'ja';
@@ -13,9 +15,43 @@ interface HeroProps {
 const Hero: React.FC<HeroProps> = ({ language, sections }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
+  const [cvFile, setCvFile] = useState<{ url: string; name: string } | null>(null);
   
   // Get hero section data from Firestore
   const heroSection = sections.find(section => section.id === 'hero');
+  const statisticsSection = sections.find(section => section.id === 'statistics');
+
+  // Load CV file information
+  useEffect(() => {
+    const loadCVFile = async () => {
+      try {
+        const cvDoc = await getDoc(doc(db, 'website-settings', 'cv-settings'));
+        if (cvDoc.exists() && cvDoc.data().cvFileId) {
+          // Get the CV file URL from Firebase Storage
+          const cvFileId = cvDoc.data().cvFileId;
+          // For now, we'll construct the URL - in a real app, you'd fetch this from storage
+          const cvUrl = `https://firebasestorage.googleapis.com/v0/b/venkata-sai-varma.firebasestorage.app/o/uploads%2Fdocument%2F${cvFileId}?alt=media`;
+          setCvFile({ url: cvUrl, name: 'CV.pdf' });
+        }
+      } catch (error) {
+        console.error('Error loading CV file:', error);
+      }
+    };
+
+    loadCVFile();
+  }, []);
+
+  const handleDownloadCV = () => {
+    if (cvFile) {
+      const link = document.createElement('a');
+      link.href = cvFile.url;
+      link.download = cvFile.name;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
   
   // Use dynamic content from Firestore or fallback to static content
   const content = {
@@ -128,6 +164,8 @@ const Hero: React.FC<HeroProps> = ({ language, sections }) => {
                   variant="contained"
                   size="large"
                   startIcon={<Download />}
+                  onClick={handleDownloadCV}
+                  disabled={!cvFile}
                   sx={{
                     backgroundColor: isDarkMode ? 'primary.main' : 'white',
                     color: isDarkMode ? 'white' : 'primary.main',
@@ -136,7 +174,7 @@ const Hero: React.FC<HeroProps> = ({ language, sections }) => {
                     }
                   }}
                 >
-                  {currentContent.cta}
+                  {cvFile ? currentContent.cta : 'CV Not Available'}
                 </Button>
                 
                 <Button
@@ -181,7 +219,7 @@ const Hero: React.FC<HeroProps> = ({ language, sections }) => {
                     <Grid size={4}>
                       <Box sx={{ textAlign: 'center' }}>
                         <Typography variant="h3" sx={{ fontWeight: 700, color: isDarkMode ? 'primary.light' : 'primary.main' }}>
-                          8+
+                          {statisticsSection ? statisticsSection.content[language].split('\n')[0].split(': ')[1] : '8+'}
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                           {currentContent.experience}
@@ -191,7 +229,7 @@ const Hero: React.FC<HeroProps> = ({ language, sections }) => {
                     <Grid size={4}>
                       <Box sx={{ textAlign: 'center' }}>
                         <Typography variant="h3" sx={{ fontWeight: 700, color: isDarkMode ? 'primary.light' : 'primary.main' }}>
-                          25+
+                          {statisticsSection ? statisticsSection.content[language].split('\n')[1].split(': ')[1] : '25+'}
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                           {currentContent.publications}
@@ -201,7 +239,7 @@ const Hero: React.FC<HeroProps> = ({ language, sections }) => {
                     <Grid size={4}>
                       <Box sx={{ textAlign: 'center' }}>
                         <Typography variant="h3" sx={{ fontWeight: 700, color: isDarkMode ? 'primary.light' : 'primary.main' }}>
-                          15+
+                          {statisticsSection ? statisticsSection.content[language].split('\n')[2].split(': ')[1] : '15+'}
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                           {currentContent.projects}

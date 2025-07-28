@@ -4,14 +4,65 @@ import { motion } from 'framer-motion';
 import { School, Work, Science, Psychology } from '@mui/icons-material';
 import type { SectionData } from '../../services/cmsService';
 
+interface EducationEntry {
+  degree: string;
+  institution: string;
+  year: string;
+  description: string;
+}
+
+interface ExperienceEntry {
+  position: string;
+  institution: string;
+  year: string;
+  description: string;
+}
+
 interface AboutProps {
   language: 'en' | 'ja';
   sections: SectionData[];
 }
 
-const About: React.FC<AboutProps> = ({ language }) => {
+const About: React.FC<AboutProps> = ({ language, sections }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
+  
+  // Get sections from Firestore
+  const aboutSection = sections.find(section => section.id === 'about');
+  const educationSection = sections.find(section => section.id === 'education');
+  const experienceSection = sections.find(section => section.id === 'experience');
+  const researchSection = sections.find(section => section.id === 'research');
+  const skillsSection = sections.find(section => section.id === 'skills');
+
+  // Parse structured data
+  const parseEducationData = (content: string): EducationEntry[] => {
+    try {
+      return JSON.parse(content);
+    } catch {
+      return [];
+    }
+  };
+
+  const parseExperienceData = (content: string): ExperienceEntry[] => {
+    try {
+      return JSON.parse(content);
+    } catch {
+      return [];
+    }
+  };
+
+  const parseArrayData = (content: string): string[] => {
+    try {
+      return JSON.parse(content);
+    } catch {
+      return [];
+    }
+  };
+
+  const educationDetails = educationSection ? parseEducationData(educationSection.content[language]) : [];
+  const experienceDetails = experienceSection ? parseExperienceData(experienceSection.content[language]) : [];
+  const researchAreas = researchSection ? parseArrayData(researchSection.content[language]) : [];
+  const technicalSkills = skillsSection ? parseArrayData(skillsSection.content[language]) : [];
   
   const content = {
     en: {
@@ -23,62 +74,10 @@ const About: React.FC<AboutProps> = ({ language }) => {
       experience: "Experience",
       research: "Research Areas",
       skills: "Technical Skills",
-      educationDetails: [
-        {
-          degree: "Ph.D. in Materials Science",
-          institution: "University of Technology",
-          year: "2020",
-          description: "Specialized in advanced semiconductor materials and quantum electronics"
-        },
-        {
-          degree: "M.S. in Electronics Engineering",
-          institution: "Institute of Advanced Studies",
-          year: "2017",
-          description: "Focused on microelectronics and device physics"
-        },
-        {
-          degree: "B.S. in Physics",
-          institution: "National University",
-          year: "2015",
-          description: "Major in solid-state physics and materials science"
-        }
-      ],
-      experienceDetails: [
-        {
-          position: "Senior Research Scientist",
-          institution: "Advanced Materials Institute",
-          year: "2020-Present",
-          description: "Leading research in quantum materials and electronic devices"
-        },
-        {
-          position: "Research Associate",
-          institution: "Electronics Research Lab",
-          year: "2017-2020",
-          description: "Developed novel semiconductor materials and devices"
-        },
-        {
-          position: "Graduate Researcher",
-          institution: "Materials Science Department",
-          year: "2015-2017",
-          description: "Conducted research on energy storage materials"
-        }
-      ],
-      researchAreas: [
-        "Quantum Materials",
-        "Semiconductor Physics",
-        "Nanotechnology",
-        "Energy Storage",
-        "Electronic Devices",
-        "Materials Characterization"
-      ],
-      technicalSkills: [
-        "Materials Synthesis",
-        "Device Fabrication",
-        "Characterization Techniques",
-        "Data Analysis",
-        "Simulation Tools",
-        "Laboratory Management"
-      ]
+      educationDetails: educationDetails,
+      experienceDetails: experienceDetails,
+      researchAreas: researchAreas,
+      technicalSkills: technicalSkills
     },
     ja: {
       title: "私について",
@@ -89,62 +88,10 @@ const About: React.FC<AboutProps> = ({ language }) => {
       experience: "経験",
       research: "研究分野",
       skills: "技術スキル",
-      educationDetails: [
-        {
-          degree: "材料科学博士号",
-          institution: "工科大学",
-          year: "2020",
-          description: "先進半導体材料と量子エレクトロニクスを専門"
-        },
-        {
-          degree: "電子工学修士号",
-          institution: "高等研究所",
-          year: "2017",
-          description: "マイクロエレクトロニクスとデバイス物理学に焦点"
-        },
-        {
-          degree: "物理学学士号",
-          institution: "国立大学",
-          year: "2015",
-          description: "固体物理学と材料科学を専攻"
-        }
-      ],
-      experienceDetails: [
-        {
-          position: "シニア研究員",
-          institution: "先進材料研究所",
-          year: "2020-現在",
-          description: "量子材料と電子デバイスの研究をリード"
-        },
-        {
-          position: "研究員",
-          institution: "電子工学研究所",
-          year: "2017-2020",
-          description: "新規半導体材料とデバイスを開発"
-        },
-        {
-          position: "大学院研究員",
-          institution: "材料科学科",
-          year: "2015-2017",
-          description: "エネルギー貯蔵材料の研究を実施"
-        }
-      ],
-      researchAreas: [
-        "量子材料",
-        "半導体物理学",
-        "ナノテクノロジー",
-        "エネルギー貯蔵",
-        "電子デバイス",
-        "材料特性評価"
-      ],
-      technicalSkills: [
-        "材料合成",
-        "デバイス製造",
-        "特性評価技術",
-        "データ解析",
-        "シミュレーションツール",
-        "実験室管理"
-      ]
+      educationDetails: educationDetails,
+      experienceDetails: experienceDetails,
+      researchAreas: researchAreas,
+      technicalSkills: technicalSkills
     }
   };
 
