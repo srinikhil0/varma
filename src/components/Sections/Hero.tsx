@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, Button, Container, Grid, Paper, useTheme } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Download, Email } from '@mui/icons-material';
-import type { SectionData } from '../../services/cmsService';
+import type { DynamicContentData } from '../../services/cmsService';
 import AnimatedBackground from '../3D/AnimatedBackground';
 import { db } from '../../config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { getStaticContent, getHeroData } from '../../utils/contentUtils';
 
 interface HeroProps {
   language: 'en' | 'ja';
-  sections: SectionData[];
+  sections: DynamicContentData[];
 }
 
 const Hero: React.FC<HeroProps> = ({ language, sections }) => {
@@ -17,10 +18,12 @@ const Hero: React.FC<HeroProps> = ({ language, sections }) => {
   const isDarkMode = theme.palette.mode === 'dark';
   const [cvFile, setCvFile] = useState<{ url: string; name: string } | null>(null);
   
-  // Get hero section data from Firestore
-  const heroSection = sections.find(section => section.id === 'hero');
-  const statisticsSection = sections.find(section => section.id === 'statistics');
-
+  // Get static content
+  const staticContent = getStaticContent(language);
+  
+  // Get dynamic content using utility functions
+  const heroData = getHeroData(sections, language);
+  
   // Load CV file information
   useEffect(() => {
     const loadCVFile = async () => {
@@ -53,31 +56,15 @@ const Hero: React.FC<HeroProps> = ({ language, sections }) => {
     }
   };
   
-  // Use dynamic content from Firestore or fallback to static content
-  const content = {
-    en: {
-      title: heroSection?.title?.en || "Dr. [Your Name]",
-      subtitle: heroSection?.content?.en || "Materials & Electronics Engineer",
-      description: "Pioneering research in advanced materials and electronic devices. Specializing in nanotechnology, semiconductor physics, and sustainable energy solutions.",
-      cta: "Download CV",
-      contact: "Get in Touch",
-      experience: "Years of Research",
-      publications: "Publications",
-      projects: "Projects Completed"
-    },
-    ja: {
-      title: heroSection?.title?.ja || "Dr. [お名前]",
-      subtitle: heroSection?.content?.ja || "材料・電子工学エンジニア",
-      description: "先進材料と電子デバイスの先駆的研究を行っています。ナノテクノロジー、半導体物理学、持続可能なエネルギーソリューションを専門としています。",
-      cta: "履歴書をダウンロード",
-      contact: "お問い合わせ",
-      experience: "研究年数",
-      publications: "論文数",
-      projects: "完了プロジェクト数"
-    }
+  // Use dynamic content with fallbacks
+  const name = heroData?.name || '[Your Name]';
+  const title = heroData?.title || '[Your Professional Title]';
+  const description = heroData?.description || '[Your professional description and expertise areas]';
+  const statistics = heroData?.statistics || {
+    yearsOfExperience: '[X]+',
+    publicationsCount: '[X]+',
+    projectsCount: '[X]+'
   };
-
-  const currentContent = content[language];
 
   return (
     <Box
@@ -131,7 +118,7 @@ const Hero: React.FC<HeroProps> = ({ language, sections }) => {
                     : '0 4px 20px rgba(25, 118, 210, 0.3)'
                 }}
               >
-                {currentContent.title}
+                {name}
               </Typography>
               
               <Typography
@@ -143,7 +130,7 @@ const Hero: React.FC<HeroProps> = ({ language, sections }) => {
                   fontSize: { xs: '1.5rem', md: '2rem' }
                 }}
               >
-                {currentContent.subtitle}
+                {title}
               </Typography>
               
               <Typography
@@ -156,7 +143,7 @@ const Hero: React.FC<HeroProps> = ({ language, sections }) => {
                   maxWidth: 500
                 }}
               >
-                {currentContent.description}
+                {description}
               </Typography>
               
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
@@ -174,7 +161,7 @@ const Hero: React.FC<HeroProps> = ({ language, sections }) => {
                     }
                   }}
                 >
-                  {cvFile ? currentContent.cta : 'CV Not Available'}
+                  {cvFile ? staticContent.buttons.downloadCV : 'CV Not Available'}
                 </Button>
                 
                 <Button
@@ -190,7 +177,7 @@ const Hero: React.FC<HeroProps> = ({ language, sections }) => {
                     }
                   }}
                 >
-                  {currentContent.contact}
+                  {staticContent.buttons.getInTouch}
                 </Button>
               </Box>
             </motion.div>
@@ -219,30 +206,30 @@ const Hero: React.FC<HeroProps> = ({ language, sections }) => {
                     <Grid size={4}>
                       <Box sx={{ textAlign: 'center' }}>
                         <Typography variant="h3" sx={{ fontWeight: 700, color: isDarkMode ? 'primary.light' : 'primary.main' }}>
-                          {statisticsSection ? statisticsSection.content[language].split('\n')[0].split(': ')[1] : '8+'}
+                          {statistics.yearsOfExperience}
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                          {currentContent.experience}
+                          {language === 'en' ? 'Years of Research' : '研究年数'}
                         </Typography>
                       </Box>
                     </Grid>
                     <Grid size={4}>
                       <Box sx={{ textAlign: 'center' }}>
                         <Typography variant="h3" sx={{ fontWeight: 700, color: isDarkMode ? 'primary.light' : 'primary.main' }}>
-                          {statisticsSection ? statisticsSection.content[language].split('\n')[1].split(': ')[1] : '25+'}
+                          {statistics.publicationsCount}
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                          {currentContent.publications}
+                          {language === 'en' ? 'Publications' : '論文数'}
                         </Typography>
                       </Box>
                     </Grid>
                     <Grid size={4}>
                       <Box sx={{ textAlign: 'center' }}>
                         <Typography variant="h3" sx={{ fontWeight: 700, color: isDarkMode ? 'primary.light' : 'primary.main' }}>
-                          {statisticsSection ? statisticsSection.content[language].split('\n')[2].split(': ')[1] : '15+'}
+                          {statistics.projectsCount}
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                          {currentContent.projects}
+                          {language === 'en' ? 'Projects Completed' : '完了プロジェクト数'}
                         </Typography>
                       </Box>
                     </Grid>

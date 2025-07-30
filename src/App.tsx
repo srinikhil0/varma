@@ -10,7 +10,7 @@ import Contact from './components/Sections/Contact';
 import CMSDashboard from './components/CMS/CMSDashboard';
 import LoginModal from './components/Auth/LoginModal';
 import { CMSService } from './services/cmsService';
-import type { SectionData } from './services/cmsService';
+import type { DynamicContentData } from './services/cmsService';
 
 function App() {
   const [language, setLanguage] = useState<'en' | 'ja'>('en');
@@ -18,7 +18,7 @@ function App() {
   const [cmsOpen, setCmsOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [sections, setSections] = useState<SectionData[]>([]);
+  const [sections, setSections] = useState<DynamicContentData[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Check authentication state

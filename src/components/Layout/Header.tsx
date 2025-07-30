@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { AppBar, Toolbar, Typography, Button, Box, IconButton, Drawer, List, ListItem, ListItemText, useTheme, useMediaQuery } from '@mui/material';
 import { Menu as MenuIcon, Language, LightMode, DarkMode } from '@mui/icons-material';
-import type { SectionData } from '../../services/cmsService';
+import type { DynamicContentData } from '../../services/cmsService';
 
 interface HeaderProps {
   onLanguageChange: (lang: 'en' | 'ja') => void;
   currentLanguage: 'en' | 'ja';
   onThemeToggle: () => void;
   isDarkMode: boolean;
-  sections: SectionData[];
+  sections: DynamicContentData[];
 }
 
 const Header: React.FC<HeaderProps> = ({ onLanguageChange, currentLanguage, onThemeToggle, isDarkMode, sections }) => {
@@ -18,7 +18,7 @@ const Header: React.FC<HeaderProps> = ({ onLanguageChange, currentLanguage, onTh
 
   // Get hero section data for the name in header
   const heroSection = sections.find(section => section.id === 'hero');
-  const headerName = heroSection?.title?.[currentLanguage] || "Dr. [Name]";
+  const headerName = (heroSection?.data?.[currentLanguage] as any)?.name || "Dr. [Name]";
 
   const navItems = [
     { key: 'home', en: 'Home', ja: 'ホーム' },

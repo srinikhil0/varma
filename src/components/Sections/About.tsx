@@ -2,101 +2,39 @@ import React from 'react';
 import { Box, Typography, Container, Grid, Paper, Chip, useTheme } from '@mui/material';
 import { motion } from 'framer-motion';
 import { School, Work, Science, Psychology } from '@mui/icons-material';
-import type { SectionData } from '../../services/cmsService';
-
-interface EducationEntry {
-  degree: string;
-  institution: string;
-  year: string;
-  description: string;
-}
-
-interface ExperienceEntry {
-  position: string;
-  institution: string;
-  year: string;
-  description: string;
-}
+import type { DynamicContentData } from '../../services/cmsService';
+import { 
+  getStaticContent, 
+  getAboutData, 
+  getEducationData, 
+  getExperienceData, 
+  getSkillsData 
+} from '../../utils/contentUtils';
 
 interface AboutProps {
   language: 'en' | 'ja';
-  sections: SectionData[];
+  sections: DynamicContentData[];
 }
 
 const About: React.FC<AboutProps> = ({ language, sections }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   
-  // Get sections from Firestore
-
-  const educationSection = sections.find(section => section.id === 'education');
-  const experienceSection = sections.find(section => section.id === 'experience');
-  const researchSection = sections.find(section => section.id === 'research');
-  const skillsSection = sections.find(section => section.id === 'skills');
-
-  // Parse structured data
-  const parseEducationData = (content: string): EducationEntry[] => {
-    try {
-      return JSON.parse(content);
-    } catch {
-      return [];
-    }
-  };
-
-  const parseExperienceData = (content: string): ExperienceEntry[] => {
-    try {
-      return JSON.parse(content);
-    } catch {
-      return [];
-    }
-  };
-
-  const parseArrayData = (content: string): string[] => {
-    try {
-      return JSON.parse(content);
-    } catch {
-      return [];
-    }
-  };
-
-  const educationDetails = educationSection ? parseEducationData(educationSection.content[language]) : [];
-  const experienceDetails = experienceSection ? parseExperienceData(experienceSection.content[language]) : [];
-  const researchAreas = researchSection ? parseArrayData(researchSection.content[language]) : [];
-  const technicalSkills = skillsSection ? parseArrayData(skillsSection.content[language]) : [];
+  // Get static content
+  const staticContent = getStaticContent(language);
   
-  const content = {
-    en: {
-      title: "About Me",
-      subtitle: "Materials & Electronics Research Specialist",
-      description: "I am a dedicated researcher with over 8 years of experience in materials science and electronics engineering. My work focuses on developing innovative solutions for next-generation electronic devices and sustainable energy technologies.",
-      longDescription: "My research encompasses the development of novel materials for semiconductor applications, energy storage systems, and electronic devices. I specialize in nanotechnology, quantum materials, and the integration of advanced materials into practical electronic systems. My work has been published in leading scientific journals and has contributed to several breakthrough technologies in the field.",
-      education: "Education",
-      experience: "Experience",
-      research: "Research Areas",
-      skills: "Technical Skills",
-      educationDetails: educationDetails,
-      experienceDetails: experienceDetails,
-      researchAreas: researchAreas,
-      technicalSkills: technicalSkills
-    },
-    ja: {
-      title: "私について",
-      subtitle: "材料・電子工学研究専門家",
-      description: "材料科学と電子工学の分野で8年以上の経験を持つ専念した研究者です。次世代電子デバイスと持続可能なエネルギー技術の革新的なソリューション開発に焦点を当てています。",
-      longDescription: "私の研究は、半導体応用、エネルギー貯蔵システム、電子デバイスのための新素材開発を包括しています。ナノテクノロジー、量子材料、先進材料の実用的な電子システムへの統合を専門としています。私の研究は主要な科学雑誌に掲載され、この分野のいくつかの画期的な技術に貢献しています。",
-      education: "学歴",
-      experience: "経験",
-      research: "研究分野",
-      skills: "技術スキル",
-      educationDetails: educationDetails,
-      experienceDetails: experienceDetails,
-      researchAreas: researchAreas,
-      technicalSkills: technicalSkills
-    }
-  };
-
-  const currentContent = content[language];
-
+  // Get dynamic content using utility functions
+  const aboutData = getAboutData(sections, language);
+  const educationDetails = getEducationData(sections, language);
+  const experienceDetails = getExperienceData(sections, language);
+  const skillsData = getSkillsData(sections, language);
+  
+  // Use dynamic content with fallbacks
+  const description = aboutData?.description || '[Your professional summary and background]';
+  const longDescription = aboutData?.longDescription || '[Detailed description of your research, expertise, and professional journey]';
+  const researchAreas = skillsData?.researchAreas || [];
+  const technicalSkills = skillsData?.technicalSkills || [];
+  
   return (
     <Box
       id="about"
@@ -129,7 +67,7 @@ const About: React.FC<AboutProps> = ({ language, sections }) => {
               WebkitTextFillColor: 'transparent'
             }}
           >
-            {currentContent.title}
+            {staticContent.navigation.about}
           </Typography>
           
           <Typography
@@ -140,7 +78,7 @@ const About: React.FC<AboutProps> = ({ language, sections }) => {
               mb: 6
             }}
           >
-            {currentContent.subtitle}
+            {language === 'en' ? 'Research Specialist' : '研究専門家'}
           </Typography>
         </motion.div>
 
@@ -161,7 +99,7 @@ const About: React.FC<AboutProps> = ({ language, sections }) => {
                   color: 'text.primary'
                 }}
               >
-                {currentContent.description}
+                {description}
               </Typography>
               
               <Typography
@@ -172,7 +110,7 @@ const About: React.FC<AboutProps> = ({ language, sections }) => {
                   color: 'text.secondary'
                 }}
               >
-                {currentContent.longDescription}
+                {longDescription}
               </Typography>
             </motion.div>
           </Grid>
@@ -203,10 +141,10 @@ const About: React.FC<AboutProps> = ({ language, sections }) => {
                   }}
                 >
                   <School color="primary" />
-                  {currentContent.education}
+                  {language === 'en' ? 'Education' : '学歴'}
                 </Typography>
                 
-                {currentContent.educationDetails.map((edu, index) => (
+                {educationDetails.map((edu, index) => (
                   <Box key={index} sx={{ mb: 3 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                       {edu.degree}
@@ -251,10 +189,10 @@ const About: React.FC<AboutProps> = ({ language, sections }) => {
                   }}
                 >
                   <Work color="primary" />
-                  {currentContent.experience}
+                  {language === 'en' ? 'Experience' : '経験'}
                 </Typography>
                 
-                {currentContent.experienceDetails.map((exp, index) => (
+                {experienceDetails.map((exp, index) => (
                   <Box key={index} sx={{ mb: 3 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                       {exp.position}
@@ -297,11 +235,11 @@ const About: React.FC<AboutProps> = ({ language, sections }) => {
                   }}
                 >
                   <Science color="primary" />
-                  {currentContent.research}
+                  {language === 'en' ? 'Research Areas' : '研究分野'}
                 </Typography>
                 
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 4 }}>
-                  {currentContent.researchAreas.map((area, index) => (
+                  {researchAreas.map((area, index) => (
                     <Chip
                       key={index}
                       label={area}
@@ -323,11 +261,11 @@ const About: React.FC<AboutProps> = ({ language, sections }) => {
                   }}
                 >
                   <Psychology color="primary" />
-                  {currentContent.skills}
+                  {language === 'en' ? 'Technical Skills' : '技術スキル'}
                 </Typography>
                 
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {currentContent.technicalSkills.map((skill, index) => (
+                  {technicalSkills.map((skill, index) => (
                     <Chip
                       key={index}
                       label={skill}

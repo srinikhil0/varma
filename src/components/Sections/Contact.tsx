@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { Box, Typography, Container, Grid, Paper, TextField, Button, IconButton } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Email, Phone, LocationOn, LinkedIn, Send } from '@mui/icons-material';
-
-import type { SectionData } from '../../services/cmsService';
+import type { DynamicContentData } from '../../services/cmsService';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
+import { getStaticContent, getContactData, getSkillsData } from '../../utils/contentUtils';
 
 interface ContactProps {
   language: 'en' | 'ja';
-  sections: SectionData[];
+  sections: DynamicContentData[];
 }
 
 const Contact: React.FC<ContactProps> = ({ language, sections }) => {
@@ -18,77 +20,13 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
     message: ''
   });
 
-  // Get contact section from Firestore
-  const contactSection = sections.find(section => section.id === 'contact');
-  const researchSection = sections.find(section => section.id === 'research');
-
-  // Parse contact information
-  const parseContactInfo = (content: string) => {
-    const lines = content.split('\n');
-    const contactInfo: { [key: string]: string } = {};
-    
-    lines.forEach(line => {
-      const [key, value] = line.split(': ').map(part => part.trim());
-      if (key && value) {
-        contactInfo[key.toLowerCase()] = value;
-      }
-    });
-    
-    return contactInfo;
-  };
-
-  // Parse research interests
-  const parseResearchInterests = (content: string) => {
-    try {
-      return JSON.parse(content);
-    } catch {
-      return [];
-    }
-  };
-
-  const contactInfo = contactSection ? parseContactInfo(contactSection.content[language]) : {};
-  const researchInterests = researchSection ? parseResearchInterests(researchSection.content[language]) : [];
-
-  const content = {
-    en: {
-      title: "Get In Touch",
-      subtitle: "Let's discuss research opportunities and collaborations",
-      description: "I'm always interested in new research collaborations, speaking opportunities, and academic partnerships. Feel free to reach out if you'd like to discuss potential projects or have any questions about my work.",
-      contactInfo: "Contact Information",
-      sendMessage: "Send Message",
-      name: "Name",
-      email: "Email",
-      subject: "Subject",
-      message: "Message",
-      location: contactInfo.location || "Tokyo, Japan",
-      phone: contactInfo.phone || "+81-XX-XXXX-XXXX",
-      emailAddress: contactInfo.email || "dr.name@university.ac.jp",
-      linkedin: contactInfo.linkedin || "LinkedIn Profile",
-      researchInterests: "Research Interests",
-      collaboration: "Collaboration Opportunities",
-      speaking: "Speaking Engagements"
-    },
-    ja: {
-      title: "お問い合わせ",
-      subtitle: "研究機会とコラボレーションについて話し合いましょう",
-      description: "新しい研究コラボレーション、講演機会、学術パートナーシップに常に関心があります。潜在的なプロジェクトについて話し合いたい場合や、私の研究について質問がある場合は、お気軽にお問い合わせください。",
-      contactInfo: "連絡先情報",
-      sendMessage: "メッセージを送信",
-      name: "お名前",
-      email: "メールアドレス",
-      subject: "件名",
-      message: "メッセージ",
-      location: contactInfo.location || "東京都",
-      phone: contactInfo.phone || "+81-XX-XXXX-XXXX",
-      emailAddress: contactInfo.email || "dr.name@university.ac.jp",
-      linkedin: contactInfo.linkedin || "LinkedInプロフィール",
-      researchInterests: "研究関心",
-      collaboration: "コラボレーション機会",
-      speaking: "講演依頼"
-    }
-  };
-
-  const currentContent = content[language];
+  // Get static content
+  const staticContent = getStaticContent(language);
+  
+  // Get dynamic content using utility functions
+  const contactData = getContactData(sections, language);
+  const skillsData = getSkillsData(sections, language);
+  const researchInterests = skillsData?.researchAreas || [];
 
   const handleInputChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -97,13 +35,51 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
     });
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    // In real app, this would send to Firebase or email service
-    console.log('Form submitted:', formData);
-    alert('Message sent successfully!');
-    setFormData({ name: '', email: '', subject: '', message: '' });
+    
+    setSubmitting(true);
+    setSubmitStatus('idle');
+    
+    try {
+      // Save message to Firestore
+      await addDoc(collection(db, 'contact-messages'), {
+        ...formData,
+        timestamp: new Date(),
+        status: 'new',
+        language: language
+      });
+      
+      // Reset form
+      setFormData({ name: '', email: '', subject: '', message: '' });
+      setSubmitStatus('success');
+      
+      // Reset status after a few seconds
+      setTimeout(() => {
+        setSubmitStatus('idle');
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setSubmitStatus('error');
+      
+      // Reset status after a few seconds
+      setTimeout(() => {
+        setSubmitStatus('idle');
+      }, 3000);
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  // Use dynamic content with fallbacks
+  const location = contactData?.location || '[Your Location]';
+  const phone = contactData?.phone || '[Your Phone Number]';
+  const emailAddress = contactData?.email || '[your.email@example.com]';
+  const linkedin = contactData?.linkedin || '[Your LinkedIn URL]';
 
   return (
     <Box
@@ -132,7 +108,7 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
               WebkitTextFillColor: 'transparent'
             }}
           >
-            {currentContent.title}
+            {staticContent.buttons.getInTouch}
           </Typography>
           
           <Typography
@@ -143,7 +119,7 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
               mb: 6
             }}
           >
-            {currentContent.subtitle}
+            {language === 'en' ? "Let's discuss research opportunities and collaborations" : '研究機会とコラボレーションについて話し合いましょう'}
           </Typography>
         </motion.div>
 
@@ -171,7 +147,7 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
                     mb: 3
                   }}
                 >
-                  {currentContent.sendMessage}
+                  {staticContent.buttons.sendMessage}
                 </Typography>
                 
                 <Typography
@@ -181,7 +157,7 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
                     mb: 4
                   }}
                 >
-                  {currentContent.description}
+                  {language === 'en' ? "I'm always interested in new research collaborations, speaking opportunities, and academic partnerships. Feel free to reach out if you'd like to discuss potential projects or have any questions about my work." : '新しい研究コラボレーション、講演機会、学術パートナーシップに常に関心があります。潜在的なプロジェクトについて話し合いたい場合や、私の研究について質問がある場合は、お気軽にお問い合わせください。'}
                 </Typography>
 
                 <form onSubmit={handleSubmit}>
@@ -189,7 +165,7 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         fullWidth
-                        label={currentContent.name}
+                        label={staticContent.forms.name}
                         value={formData.name}
                         onChange={handleInputChange('name')}
                         required
@@ -198,46 +174,59 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         fullWidth
-                        label={currentContent.email}
+                        label={staticContent.forms.email}
                         type="email"
                         value={formData.email}
                         onChange={handleInputChange('email')}
                         required
-                                              />
-                      </Grid>
-                      <Grid size={12}>
-                        <TextField
-                          fullWidth
-                          label={currentContent.subject}
-                          value={formData.subject}
-                          onChange={handleInputChange('subject')}
-                          required
-                        />
-                      </Grid>
-                      <Grid size={12}>
+                      />
+                    </Grid>
+                    <Grid size={12}>
                       <TextField
                         fullWidth
-                        label={currentContent.message}
+                        label={staticContent.forms.subject}
+                        value={formData.subject}
+                        onChange={handleInputChange('subject')}
+                        required
+                      />
+                    </Grid>
+                    <Grid size={12}>
+                      <TextField
+                        fullWidth
+                        label={staticContent.forms.message}
                         multiline
                         rows={4}
                         value={formData.message}
                         onChange={handleInputChange('message')}
                         required
-                                              />
-                      </Grid>
-                      <Grid size={12}>
+                      />
+                    </Grid>
+                    <Grid size={12}>
                       <Button
                         type="submit"
                         variant="contained"
                         size="large"
                         startIcon={<Send />}
+                        disabled={submitting}
                         sx={{
                           px: 4,
                           py: 1.5
                         }}
                       >
-                        {currentContent.sendMessage}
+                        {submitting ? staticContent.status.sending : staticContent.buttons.sendMessage}
                       </Button>
+                      
+                      {submitStatus === 'success' && (
+                        <Typography variant="body2" color="success.main" sx={{ mt: 1 }}>
+                          {staticContent.status.messageSent}
+                        </Typography>
+                      )}
+                      
+                      {submitStatus === 'error' && (
+                        <Typography variant="body2" color="error.main" sx={{ mt: 1 }}>
+                          {staticContent.status.messageError}
+                        </Typography>
+                      )}
                     </Grid>
                   </Grid>
                 </form>
@@ -269,7 +258,7 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
                     mb: 3
                   }}
                 >
-                  {currentContent.contactInfo}
+                  {language === 'en' ? 'Contact Information' : '連絡先情報'}
                 </Typography>
 
                 <Box sx={{ mb: 4 }}>
@@ -277,7 +266,7 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
                     <LocationOn color="primary" sx={{ mr: 2 }} />
                     <Box>
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                        {currentContent.location}
+                        {location}
                       </Typography>
                     </Box>
                   </Box>
@@ -286,7 +275,7 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
                     <Phone color="primary" sx={{ mr: 2 }} />
                     <Box>
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                        {currentContent.phone}
+                        {phone}
                       </Typography>
                     </Box>
                   </Box>
@@ -295,7 +284,7 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
                     <Email color="primary" sx={{ mr: 2 }} />
                     <Box>
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                        {currentContent.emailAddress}
+                        {emailAddress}
                       </Typography>
                     </Box>
                   </Box>
@@ -303,7 +292,7 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
 
                 <Box sx={{ mb: 4 }}>
                   <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                    {currentContent.researchInterests}
+                    {language === 'en' ? 'Research Interests' : '研究関心'}
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     {researchInterests.length > 0 ? (
@@ -318,7 +307,7 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
                         </Button>
                       ))
                     ) : (
-                      ['Quantum Materials', 'Semiconductor Physics', 'Nanotechnology', 'Energy Storage'].map((interest, index) => (
+                      ['[Research Area 1]', '[Research Area 2]', '[Research Area 3]'].map((interest, index) => (
                         <Button
                           key={index}
                           variant="outlined"
@@ -343,8 +332,8 @@ const Contact: React.FC<ContactProps> = ({ language, sections }) => {
                         border: '1px solid',
                         borderColor: 'primary.main'
                       }}
-                      onClick={() => contactInfo.linkedin && window.open(contactInfo.linkedin, '_blank')}
-                      disabled={!contactInfo.linkedin}
+                      onClick={() => linkedin && linkedin !== '[Your LinkedIn URL]' && window.open(linkedin, '_blank')}
+                      disabled={!linkedin || linkedin === '[Your LinkedIn URL]'}
                     >
                       <LinkedIn />
                     </IconButton>

@@ -13,63 +13,146 @@ import {
 import { db } from '../config/firebase';
 import { TranslationService } from './translationService';
 
-export interface SectionData {
+// Dynamic content interfaces - only for CMS-managed data
+export interface HeroData {
+  name: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  statistics: {
+    yearsOfExperience: string;
+    publicationsCount: string;
+    projectsCount: string;
+  };
+}
+
+export interface AboutData {
+  description: string;
+  longDescription: string;
+}
+
+export interface EducationEntry {
+  degree: string;
+  institution: string;
+  year: string;
+  description: string;
+}
+
+export interface ExperienceEntry {
+  position: string;
+  institution: string;
+  year: string;
+  description: string;
+}
+
+export interface ResearchProject {
+  title: string;
+  description: string;
+  image: string;
+  tags: string[];
+  status: string;
+  startDate: string;
+  endDate?: string;
+}
+
+export interface Publication {
+  title: string;
+  journal: string;
+  year: string;
+  authors: string;
+  doi: string;
+  impact: string;
+  abstract?: string;
+}
+
+export interface Achievement {
+  title: string;
+  description: string;
+  year: string;
+  organization?: string;
+}
+
+export interface ContactData {
+  email: string;
+  phone: string;
+  location: string;
+  linkedin: string;
+  researchGate?: string;
+  googleScholar?: string;
+  github?: string;
+}
+
+export interface SkillsData {
+  technicalSkills: string[];
+  researchAreas: string[];
+  programmingLanguages: string[];
+  tools: string[];
+}
+
+export interface AwardsData {
+  awards: Achievement[];
+}
+
+// Main content data structure
+export interface DynamicContentData {
   id: string;
-  type: 'hero' | 'about' | 'education' | 'experience' | 'research' | 'publications' | 'projects' | 'skills' | 'awards' | 'contact';
-  title: { en: string; ja: string };
-  content: { en: string; ja: string };
+  type: 'hero' | 'about' | 'education' | 'experience' | 'research-projects' | 'publications' | 'skills' | 'awards' | 'contact';
+  data: {
+    en: HeroData | AboutData | EducationEntry[] | ExperienceEntry[] | ResearchProject[] | Publication[] | SkillsData | AwardsData | ContactData;
+    ja: HeroData | AboutData | EducationEntry[] | ExperienceEntry[] | ResearchProject[] | Publication[] | SkillsData | AwardsData | ContactData;
+  };
   visible: boolean;
   order: number;
   lastModified: Date;
 }
 
 export interface WebsiteContent {
-  sections: SectionData[];
+  sections: DynamicContentData[];
   lastPublished: Date;
   version: number;
 }
 
-// CMS Service for managing website content
+// CMS Service for managing dynamic website content only
 export class CMSService {
-  private static COLLECTION_NAME = 'website-content';
+  private static COLLECTION_NAME = 'dynamic-content';
 
-  // Get all sections
-  static async getSections(): Promise<SectionData[]> {
+  // Get all dynamic content sections
+  static async getSections(): Promise<DynamicContentData[]> {
     try {
       const querySnapshot = await getDocs(
         query(collection(db, this.COLLECTION_NAME), orderBy('order'))
       );
       
-      const sections: SectionData[] = [];
+      const sections: DynamicContentData[] = [];
       querySnapshot.forEach((doc) => {
-        sections.push({ id: doc.id, ...doc.data() } as SectionData);
+        sections.push({ id: doc.id, ...doc.data() } as DynamicContentData);
       });
       
       return sections;
     } catch (error) {
-      console.error('Error fetching sections:', error);
+      console.error('Error fetching dynamic content sections:', error);
       return [];
     }
   }
 
-  // Get a single section
-  static async getSection(sectionId: string): Promise<SectionData | null> {
+  // Get a single dynamic content section
+  static async getSection(sectionId: string): Promise<DynamicContentData | null> {
     try {
       const docRef = doc(db, this.COLLECTION_NAME, sectionId);
       const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as SectionData;
+        return { id: docSnap.id, ...docSnap.data() } as DynamicContentData;
       }
       return null;
     } catch (error) {
-      console.error('Error fetching section:', error);
+      console.error('Error fetching dynamic content section:', error);
       return null;
     }
   }
 
-  // Save a section with auto-translation
-  static async saveSection(section: SectionData): Promise<boolean> {
+  // Save a dynamic content section with auto-translation
+  static async saveSection(section: DynamicContentData): Promise<boolean> {
     try {
       // Auto-translate if translation service is available
       if (TranslationService.isInitialized()) {
@@ -88,36 +171,35 @@ export class CMSService {
       }
       return true;
     } catch (error) {
-      console.error('Error saving section:', error);
+      console.error('Error saving dynamic content section:', error);
       return false;
     }
   }
 
   // Auto-translate section content
-  private static async autoTranslateSection(section: SectionData): Promise<SectionData> {
+  private static async autoTranslateSection(section: DynamicContentData): Promise<DynamicContentData> {
     try {
       const updatedSection = { ...section };
 
-      // If English content exists but Japanese is empty, translate to Japanese
-      if (section.title.en && !section.title.ja) {
-        const titleTranslation = await TranslationService.translateToJapanese(section.title.en);
-        updatedSection.title.ja = titleTranslation.translatedText;
-      }
-
-      if (section.content.en && !section.content.ja) {
-        const contentTranslation = await TranslationService.translateToJapanese(section.content.en);
-        updatedSection.content.ja = contentTranslation.translatedText;
-      }
-
-      // If Japanese content exists but English is empty, translate to English
-      if (section.title.ja && !section.title.en) {
-        const titleTranslation = await TranslationService.translateToEnglish(section.title.ja);
-        updatedSection.title.en = titleTranslation.translatedText;
-      }
-
-      if (section.content.ja && !section.content.en) {
-        const contentTranslation = await TranslationService.translateToEnglish(section.content.ja);
-        updatedSection.content.en = contentTranslation.translatedText;
+      // Translate text fields based on section type
+      if (section.type === 'hero') {
+        const heroData = section.data.en as HeroData;
+        if (heroData && !section.data.ja) {
+          const translatedHero = await this.translateHeroData(heroData);
+          updatedSection.data.ja = translatedHero;
+        }
+      } else if (section.type === 'about') {
+        const aboutData = section.data.en as AboutData;
+        if (aboutData && !section.data.ja) {
+          const translatedAbout = await this.translateAboutData(aboutData);
+          updatedSection.data.ja = translatedAbout;
+        }
+      } else if (section.type === 'contact') {
+        const contactData = section.data.en as ContactData;
+        if (contactData && !section.data.ja) {
+          const translatedContact = await this.translateContactData(contactData);
+          updatedSection.data.ja = translatedContact;
+        }
       }
 
       return updatedSection;
@@ -127,8 +209,62 @@ export class CMSService {
     }
   }
 
-  // Update a section with auto-translation
-  static async updateSection(sectionId: string, updates: Partial<SectionData>): Promise<boolean> {
+  // Helper methods for translating specific data types
+  private static async translateHeroData(heroData: HeroData): Promise<HeroData> {
+    try {
+      const [nameTranslation, titleTranslation, subtitleTranslation, descriptionTranslation] = await Promise.all([
+        TranslationService.translateToJapanese(heroData.name),
+        TranslationService.translateToJapanese(heroData.title),
+        TranslationService.translateToJapanese(heroData.subtitle),
+        TranslationService.translateToJapanese(heroData.description)
+      ]);
+
+      return {
+        ...heroData,
+        name: nameTranslation.translatedText,
+        title: titleTranslation.translatedText,
+        subtitle: subtitleTranslation.translatedText,
+        description: descriptionTranslation.translatedText
+      };
+    } catch (error) {
+      console.error('Error translating hero data:', error);
+      return heroData;
+    }
+  }
+
+  private static async translateAboutData(aboutData: AboutData): Promise<AboutData> {
+    try {
+      const [descriptionTranslation, longDescriptionTranslation] = await Promise.all([
+        TranslationService.translateToJapanese(aboutData.description),
+        TranslationService.translateToJapanese(aboutData.longDescription)
+      ]);
+
+      return {
+        description: descriptionTranslation.translatedText,
+        longDescription: longDescriptionTranslation.translatedText
+      };
+    } catch (error) {
+      console.error('Error translating about data:', error);
+      return aboutData;
+    }
+  }
+
+  private static async translateContactData(contactData: ContactData): Promise<ContactData> {
+    try {
+      const locationTranslation = await TranslationService.translateToJapanese(contactData.location);
+
+      return {
+        ...contactData,
+        location: locationTranslation.translatedText
+      };
+    } catch (error) {
+      console.error('Error translating contact data:', error);
+      return contactData;
+    }
+  }
+
+  // Update a dynamic content section with auto-translation
+  static async updateSection(sectionId: string, updates: Partial<DynamicContentData>): Promise<boolean> {
     try {
       // Auto-translate if translation service is available
       if (TranslationService.isInitialized()) {
@@ -147,43 +283,34 @@ export class CMSService {
       }
       return true;
     } catch (error) {
-      console.error('Error updating section:', error);
+      console.error('Error updating dynamic content section:', error);
       return false;
     }
   }
 
   // Auto-translate updates
-  private static async autoTranslateUpdates(updates: Partial<SectionData>): Promise<Partial<SectionData>> {
+  private static async autoTranslateUpdates(updates: Partial<DynamicContentData>): Promise<Partial<DynamicContentData>> {
     try {
       const updatedUpdates = { ...updates };
 
-      // Handle title updates
-      if (updates.title) {
-        if (!updatedUpdates.title) {
-          updatedUpdates.title = { en: '', ja: '' };
+      // Handle data updates based on type
+      if (updates.data?.en && !updates.data?.ja && updates.type) {
+        if (!updatedUpdates.data) {
+          updatedUpdates.data = { 
+            en: updates.data.en, 
+            ja: null as unknown as HeroData | AboutData | EducationEntry[] | ExperienceEntry[] | ResearchProject[] | Publication[] | SkillsData | AwardsData | ContactData 
+          };
         }
         
-        if (updates.title.en && !updates.title.ja) {
-          const titleTranslation = await TranslationService.translateToJapanese(updates.title.en);
-          updatedUpdates.title.ja = titleTranslation.translatedText;
-        } else if (updates.title.ja && !updates.title.en) {
-          const titleTranslation = await TranslationService.translateToEnglish(updates.title.ja);
-          updatedUpdates.title.en = titleTranslation.translatedText;
-        }
-      }
-
-      // Handle content updates
-      if (updates.content) {
-        if (!updatedUpdates.content) {
-          updatedUpdates.content = { en: '', ja: '' };
-        }
-        
-        if (updates.content.en && !updates.content.ja) {
-          const contentTranslation = await TranslationService.translateToJapanese(updates.content.en);
-          updatedUpdates.content.ja = contentTranslation.translatedText;
-        } else if (updates.content.ja && !updates.content.en) {
-          const contentTranslation = await TranslationService.translateToEnglish(updates.content.ja);
-          updatedUpdates.content.en = contentTranslation.translatedText;
+        if (updates.type === 'hero') {
+          const translatedHero = await this.translateHeroData(updates.data.en as HeroData);
+          updatedUpdates.data.ja = translatedHero;
+        } else if (updates.type === 'about') {
+          const translatedAbout = await this.translateAboutData(updates.data.en as AboutData);
+          updatedUpdates.data.ja = translatedAbout;
+        } else if (updates.type === 'contact') {
+          const translatedContact = await this.translateContactData(updates.data.en as ContactData);
+          updatedUpdates.data.ja = translatedContact;
         }
       }
 
@@ -194,14 +321,14 @@ export class CMSService {
     }
   }
 
-  // Delete a section
+  // Delete a dynamic content section
   static async deleteSection(sectionId: string): Promise<boolean> {
     try {
       const docRef = doc(db, this.COLLECTION_NAME, sectionId);
       await deleteDoc(docRef);
       return true;
     } catch (error) {
-      console.error('Error deleting section:', error);
+      console.error('Error deleting dynamic content section:', error);
       return false;
     }
   }
@@ -222,13 +349,13 @@ export class CMSService {
   }
 
   // Subscribe to real-time updates
-  static subscribeToSections(callback: (sections: SectionData[]) => void) {
+  static subscribeToSections(callback: (sections: DynamicContentData[]) => void) {
     return onSnapshot(
       query(collection(db, this.COLLECTION_NAME), orderBy('order')),
       (querySnapshot) => {
-        const sections: SectionData[] = [];
+        const sections: DynamicContentData[] = [];
         querySnapshot.forEach((doc) => {
-          sections.push({ id: doc.id, ...doc.data() } as SectionData);
+          sections.push({ id: doc.id, ...doc.data() } as DynamicContentData);
         });
         callback(sections);
       }
@@ -236,137 +363,13 @@ export class CMSService {
   }
 }
 
-// Initialize default content if database is empty
+// Initialize default dynamic content if database is empty
 export const initializeDefaultContent = async () => {
   const sections = await CMSService.getSections();
   
   if (sections.length === 0) {
-    const defaultSections: SectionData[] = [
-      {
-        id: 'hero',
-        type: 'hero',
-        title: { en: 'Dr. Venkata Sai Varma', ja: '' },
-        content: { 
-          en: 'Materials & Electronics Engineer specializing in nanotechnology and sustainable energy solutions.',
-          ja: ''
-        },
-        visible: true,
-        order: 1,
-        lastModified: new Date()
-      },
-      {
-        id: 'about',
-        type: 'about',
-        title: { en: 'About Me', ja: '' },
-        content: { 
-          en: 'Dedicated researcher with over 8 years of experience in materials science and electronics engineering. Passionate about advancing technology for sustainable development and contributing to breakthrough innovations in nanotechnology.',
-          ja: ''
-        },
-        visible: true,
-        order: 2,
-        lastModified: new Date()
-      },
-      {
-        id: 'education',
-        type: 'education',
-        title: { en: 'Education', ja: '' },
-        content: { 
-          en: '• Ph.D. in Materials Science and Engineering, [University Name], 2020-2024\n• M.S. in Electronics Engineering, [University Name], 2018-2020\n• B.S. in Materials Engineering, [University Name], 2014-2018',
-          ja: ''
-        },
-        visible: true,
-        order: 3,
-        lastModified: new Date()
-      },
-      {
-        id: 'experience',
-        type: 'experience',
-        title: { en: 'Work Experience', ja: '' },
-        content: { 
-          en: '• Senior Research Engineer, [Company/Institution], 2022-Present\n• Research Associate, [Company/Institution], 2020-2022\n• Graduate Research Assistant, [University], 2018-2020',
-          ja: ''
-        },
-        visible: true,
-        order: 4,
-        lastModified: new Date()
-      },
-      {
-        id: 'research',
-        type: 'research',
-        title: { en: 'Research Interests', ja: '' },
-        content: { 
-          en: '• Quantum Materials and Devices\n• Nanotechnology and Nanomaterials\n• Sustainable Energy Solutions\n• Advanced Electronic Materials\n• Semiconductor Physics\n• Renewable Energy Technologies',
-          ja: ''
-        },
-        visible: true,
-        order: 5,
-        lastModified: new Date()
-      },
-      {
-        id: 'publications',
-        type: 'publications',
-        title: { en: 'Publications', ja: '' },
-        content: { 
-          en: '• "Advanced Nanomaterials for Energy Applications," Journal of Materials Science, 2024\n• "Quantum Materials in Electronic Devices," Nature Materials, 2023\n• "Sustainable Energy Solutions," Energy & Environmental Science, 2023\n• "Nanotechnology in Electronics," Advanced Materials, 2022',
-          ja: ''
-        },
-        visible: true,
-        order: 6,
-        lastModified: new Date()
-      },
-      {
-        id: 'projects',
-        type: 'projects',
-        title: { en: 'Projects', ja: '' },
-        content: { 
-          en: '• Development of Quantum Computing Materials (2023-2024)\n• Sustainable Energy Storage Solutions (2022-2023)\n• Advanced Semiconductor Technologies (2021-2022)\n• Nanomaterials for Environmental Applications (2020-2021)',
-          ja: ''
-        },
-        visible: true,
-        order: 7,
-        lastModified: new Date()
-      },
-      {
-        id: 'skills',
-        type: 'skills',
-        title: { en: 'Skills & Expertise', ja: '' },
-        content: { 
-          en: '• Materials Characterization (SEM, TEM, XRD, AFM)\n• Nanofabrication Techniques\n• Quantum Materials Synthesis\n• Electronic Device Fabrication\n• Data Analysis & Modeling\n• Programming (Python, MATLAB, C++)\n• Project Management\n• Scientific Writing & Communication',
-          ja: ''
-        },
-        visible: true,
-        order: 8,
-        lastModified: new Date()
-      },
-      {
-        id: 'awards',
-        type: 'awards',
-        title: { en: 'Awards & Recognition', ja: '' },
-        content: { 
-          en: '• Outstanding Researcher Award, Materials Science Society, 2024\n• Best Paper Award, International Conference on Nanotechnology, 2023\n• Young Scientist Fellowship, National Science Foundation, 2022\n• Graduate Student Excellence Award, University, 2020',
-          ja: ''
-        },
-        visible: true,
-        order: 9,
-        lastModified: new Date()
-      },
-      {
-        id: 'contact',
-        type: 'contact',
-        title: { en: 'Contact Information', ja: '' },
-        content: { 
-          en: '• Email: venkatasaivarma28@gmail.com\n• LinkedIn: linkedin.com/in/venkatasaivarma\n• ResearchGate: researchgate.net/profile/venkatasaivarma\n• Google Scholar: scholar.google.com/citations?user=venkatasaivarma',
-          ja: ''
-        },
-        visible: true,
-        order: 10,
-        lastModified: new Date()
-      }
-    ];
-
-    // Save default sections
-    for (const section of defaultSections) {
-      await CMSService.saveSection(section);
-    }
+    // Don't save placeholder data to Firestore
+    // The database should remain empty until user adds real content
+    console.log('Database is empty. Please add your content through the CMS.');
   }
 }; 

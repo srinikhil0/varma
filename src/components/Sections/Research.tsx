@@ -2,98 +2,26 @@ import React from 'react';
 import { Box, Typography, Container, Grid, Card, CardContent, CardMedia, Chip, Button } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Science, Article, TrendingUp } from '@mui/icons-material';
-
-import type { SectionData } from '../../services/cmsService';
-
-interface ResearchProject {
-  title: string;
-  description: string;
-  image: string;
-  tags: string[];
-  status: string;
-}
-
-interface Publication {
-  title: string;
-  journal: string;
-  year: string;
-  authors: string;
-  doi: string;
-  impact: string;
-}
-
-interface Achievement {
-  title: string;
-  description: string;
-  year: string;
-}
+import type { DynamicContentData } from '../../services/cmsService';
+import { 
+  getResearchProjectsData, 
+  getPublicationsData, 
+  getAwardsData 
+} from '../../utils/contentUtils';
 
 interface ResearchProps {
   language: 'en' | 'ja';
-  sections: SectionData[];
+  sections: DynamicContentData[];
 }
 
 const Research: React.FC<ResearchProps> = ({ language, sections }) => {
-  // Get sections from Firestore
-  const researchProjectsSection = sections.find(section => section.id === 'research-projects');
-  const publicationsSection = sections.find(section => section.id === 'publications');
-  const achievementsSection = sections.find(section => section.id === 'achievements');
 
-  // Parse structured data
-  const parseResearchProjects = (content: string): ResearchProject[] => {
-    try {
-      return JSON.parse(content);
-    } catch {
-      return [];
-    }
-  };
-
-  const parsePublications = (content: string): Publication[] => {
-    try {
-      return JSON.parse(content);
-    } catch {
-      return [];
-    }
-  };
-
-  const parseAchievements = (content: string): Achievement[] => {
-    try {
-      return JSON.parse(content);
-    } catch {
-      return [];
-    }
-  };
-
-  const researchProjects = researchProjectsSection ? parseResearchProjects(researchProjectsSection.content[language]) : [];
-  const publications = publicationsSection ? parsePublications(publicationsSection.content[language]) : [];
-  const achievements = achievementsSection ? parseAchievements(achievementsSection.content[language]) : [];
-
-  const content = {
-    en: {
-      title: "Research & Publications",
-      subtitle: "Current Research Projects and Scientific Contributions",
-      currentResearch: "Current Research",
-      publicationsTitle: "Recent Publications",
-      achievementsTitle: "Key Achievements",
-      viewAll: "View All Publications",
-      projects: researchProjects,
-      publications: publications,
-      achievements: achievements
-    },
-    ja: {
-      title: "研究・論文",
-      subtitle: "現在の研究プロジェクトと科学的貢献",
-      currentResearch: "現在の研究",
-      publicationsTitle: "最近の論文",
-      achievementsTitle: "主要な成果",
-      viewAll: "すべての論文を見る",
-      projects: researchProjects,
-      publications: publications,
-      achievements: achievements
-    }
-  };
-
-  const currentContent = content[language];
+  
+  // Get dynamic content using utility functions
+  const researchProjects = getResearchProjectsData(sections, language);
+  const publications = getPublicationsData(sections, language);
+  const awardsData = getAwardsData(sections, language);
+  const achievements = awardsData?.awards || [];
 
   return (
     <Box
@@ -122,7 +50,7 @@ const Research: React.FC<ResearchProps> = ({ language, sections }) => {
               WebkitTextFillColor: 'transparent'
             }}
           >
-            {currentContent.title}
+            {language === 'en' ? 'Research & Publications' : '研究・論文'}
           </Typography>
           
           <Typography
@@ -133,7 +61,7 @@ const Research: React.FC<ResearchProps> = ({ language, sections }) => {
               mb: 6
             }}
           >
-            {currentContent.subtitle}
+            {language === 'en' ? 'Current Research Projects and Scientific Contributions' : '現在の研究プロジェクトと科学的貢献'}
           </Typography>
         </motion.div>
 
@@ -155,11 +83,11 @@ const Research: React.FC<ResearchProps> = ({ language, sections }) => {
             }}
           >
             <Science color="primary" />
-            {currentContent.currentResearch}
+            {language === 'en' ? 'Current Research' : '現在の研究'}
           </Typography>
 
           <Grid container spacing={4} sx={{ mb: 6 }}>
-            {currentContent.projects.map((project, index) => (
+            {researchProjects.map((project, index) => (
               <Grid size={{ xs: 12, md: 4 }} key={index}>
                 <Card
                   sx={{
@@ -229,10 +157,10 @@ const Research: React.FC<ResearchProps> = ({ language, sections }) => {
                 }}
               >
                 <Article color="primary" />
-                {currentContent.publicationsTitle}
+                {language === 'en' ? 'Recent Publications' : '最近の論文'}
               </Typography>
 
-              {content[language].publications.map((pub, index) => (
+              {publications.map((pub, index) => (
                 <Card key={index} sx={{ mb: 3 }}>
                   <CardContent>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
@@ -264,7 +192,7 @@ const Research: React.FC<ResearchProps> = ({ language, sections }) => {
                 size="large"
                 sx={{ mt: 2 }}
               >
-                {currentContent.viewAll}
+                {language === 'en' ? 'View All Publications' : 'すべての論文を見る'}
               </Button>
             </motion.div>
           </Grid>
@@ -288,10 +216,10 @@ const Research: React.FC<ResearchProps> = ({ language, sections }) => {
                 }}
               >
                 <TrendingUp color="primary" />
-                {currentContent.achievementsTitle}
+                {language === 'en' ? 'Key Achievements' : '主要な成果'}
               </Typography>
 
-              {content[language].achievements.map((achievement, index) => (
+              {achievements.map((achievement, index) => (
                 <Card key={index} sx={{ mb: 3 }}>
                   <CardContent>
                     <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
