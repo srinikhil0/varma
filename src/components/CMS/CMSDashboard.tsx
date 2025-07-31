@@ -89,7 +89,7 @@ const CMSDashboard: React.FC<CMSDashboardProps> = ({ onClose }) => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploadType, setUploadType] = useState<'image' | 'document'>('image');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' | 'warning' }>({
     open: false,
     message: '',
     severity: 'success'
